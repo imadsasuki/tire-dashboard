@@ -1,0 +1,1 @@
+export { DataManagerView } from './DataManagerView';
