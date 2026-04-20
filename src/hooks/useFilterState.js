@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { filterData, getUniqueOptions } from '../utils/dataProcessing';
 
-export const useFilterState = (data, fields) => {
+export const useFilterState = (data, fields, includeBlank = false) => {
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState(
     fields.reduce((acc, field) => ({ ...acc, [field]: [] }), {})
@@ -36,10 +36,10 @@ export const useFilterState = (data, fields) => {
   const options = useMemo(() => {
     const opts = {};
     fields.forEach(field => {
-      opts[field] = getUniqueOptions(data, field);
+      opts[field] = getUniqueOptions(data, field, includeBlank);
     });
     return opts;
-  }, [data, fields]);
+  }, [data, fields, includeBlank]);
 
   return {
     search,

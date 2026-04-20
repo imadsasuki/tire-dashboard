@@ -172,10 +172,26 @@ const MapModule = ({ data }) => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                     {Object.entries(typeConfig).map(([id, cfg]) => (
-                        <button key={id} onClick={() => setSelectedTypes(prev => prev.includes(parseInt(id)) ? prev.filter(x => x !== parseInt(id)) : [...prev, parseInt(id)])} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all flex items-center gap-2 border-2 ${selectedTypes.includes(parseInt(id)) ? 'bg-white border-slate-900 text-slate-900 shadow-md translate-y-[-1px]' : 'bg-slate-50 border-transparent text-slate-400 opacity-50 hover:opacity-100'}`}>
-                            <div className="w-2.5 h-2.5 rounded-full shadow-inner" style={{ backgroundColor: cfg.color }}></div>
-                            {cfg.label}
-                        </button>
+                        <div key={id} className="group relative">
+                            <button 
+                                onClick={() => setSelectedTypes(prev => prev.includes(parseInt(id)) ? prev.filter(x => x !== parseInt(id)) : [...prev, parseInt(id)])} 
+                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all flex items-center gap-2 border-2 ${selectedTypes.includes(parseInt(id)) ? 'bg-white border-slate-900 text-slate-900 shadow-md translate-y-[-1px]' : 'bg-slate-50 border-transparent text-slate-400 opacity-50 hover:opacity-100'}`}
+                            >
+                                <div className="w-2.5 h-2.5 rounded-full shadow-inner" style={{ backgroundColor: cfg.color }}></div>
+                                {cfg.label}
+                            </button>
+                            {/* Instant Popup - positioned left to avoid cut-off */}
+                            <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-75 pointer-events-none z-50 w-56">
+                                <div className="flex items-start gap-2">
+                                    <span className="w-2 h-2 rounded-full mt-0.5 shrink-0" style={{ backgroundColor: cfg.color }}></span>
+                                    <div className="leading-tight">
+                                        <div className="font-bold">{cfg.fullLabel}</div>
+                                        <div className="text-slate-400 text-[9px] mt-0.5">{cfg.description}</div>
+                                    </div>
+                                </div>
+                                <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-slate-900"></div>
+                            </div>
+                        </div>
                     ))}
                 </div>
             </div>

@@ -15,8 +15,16 @@ export const processRow = (row) => ({
   ParentCompany: row.ParentCompany || (row.Company?.match(/\(([^)]+)\)/)?.[1]) || (row.Company?.split(' ')[0] || '')
 });
 
-export const getUniqueOptions = (data, field) => 
-  [...new Set(data.map(d => d[field]))].filter(Boolean).sort();
+export const getUniqueOptions = (data, field, includeBlank = false) => {
+  const allValues = data.map(d => d[field]).filter(v => v !== undefined && v !== null);
+  const hasBlank = includeBlank && allValues.some(v => !v || String(v).trim() === '');
+  const uniqueValues = [...new Set(allValues.filter(Boolean))].sort();
+  
+  if (hasBlank) {
+    return ['(blank)', ...uniqueValues];
+  }
+  return uniqueValues;
+};
 
 export const filterData = (data, { search, filters, sort }) => {
   const filtered = data.filter(row => {
@@ -29,7 +37,15 @@ export const filterData = (data, { search, filters, sort }) => {
       if (field === 'TireTypes') {
         return row.typeTags?.some(t => values.includes(t));
       }
-      return values.includes(row[field]);
+      // Handle blank/empty filter
+      const includesBlank = values.includes('(blank)');
+      const nonBlankValues = values.filter(v => v !== '(blank)');
+      const rowValue = row[field];
+      const isBlank = !rowValue || String(rowValue).trim() === '';
+      
+      if (includesBlank && isBlank) return true;
+      if (nonBlankValues.includes(rowValue)) return true;
+      return false;
     });
     
     return matchSearch && matchFilters;
@@ -49,16 +65,30 @@ export const calculateStats = (data) => {
   const countries = {};
   const capacities = {};
   const types = {};
+  const yearOpened = {};
 
   data.forEach(d => {
     countries[d.Country] = (countries[d.Country] || 0) + 1;
     capacities[d.Country] = (capacities[d.Country] || 0) + (d.capacityValue || 0);
+    
+    // Count plants by year opened
+    if (d['Year Opened']) {
+      const year = String(d['Year Opened']).trim();
+      if (year && !isNaN(parseInt(year))) {
+        yearOpened[year] = (yearOpened[year] || 0) + 1;
+      }
+    }
+    
     d.typeTags?.forEach(t => {
       if (TIRE_TYPE_MAP[t]) {
         types[TIRE_TYPE_MAP[t].label] = (types[TIRE_TYPE_MAP[t].label] || 0) + 1;
       }
     });
   });
+
+  // Sort years and prepare line chart data
+  const sortedYears = Object.entries(yearOpened)
+    .sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
 
   return {
     countries: Object.entries(countries)
@@ -71,6 +101,7 @@ export const calculateStats = (data) => {
       .slice(0, 8),
     types: Object.entries(types)
       .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
+      .sort((a, b) => b.value - a.value),
+    yearOpened: sortedYears.map(([year, count]) => ({ year, count }))
   };
 };

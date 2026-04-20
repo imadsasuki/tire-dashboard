@@ -16,8 +16,8 @@ const App = () => {
   // Dashboard filter state
   const dashFilters = useFilterState(data, DASH_FIELDS);
   
-  // Data Manager filter state
-  const mgrFilters = useFilterState(data, dbFields);
+  // Data Manager filter state (with blank filter option enabled)
+  const mgrFilters = useFilterState(data, dbFields, true);
 
   if (isLoading) {
     return (

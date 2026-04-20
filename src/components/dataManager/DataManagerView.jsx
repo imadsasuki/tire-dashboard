@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Database, Search, Plus, Save, Trash2, RefreshCcw, Table2, AlertCircle } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Database, Search, Plus, Save, Trash2, RefreshCcw, Table2, AlertCircle, SlidersHorizontal } from 'lucide-react';
 import { FilterDropdown } from '../common/FilterDropdown';
 import { DB_FIELDS } from '../../config/constants';
 
@@ -23,12 +23,15 @@ export const DataManagerView = ({
   onSync,
   isSyncing
 }) => {
+  // Column width slider state (80px to 200px)
+  const [colWidth, setColWidth] = useState(120);
+  const [showSlider, setShowSlider] = useState(false);
+
   // Calculate dynamic table min-width based on column count
   const tableMinWidth = useMemo(() => {
-    const colWidth = 180; // Base column width
-    const actionColWidth = 60;
+    const actionColWidth = 50;
     return (dbFields.length * colWidth) + actionColWidth;
-  }, [dbFields.length]);
+  }, [dbFields.length, colWidth]);
 
   // Separate known vs extra fields for display
   const { knownFields, extraFields } = useMemo(() => {
@@ -41,13 +44,15 @@ export const DataManagerView = ({
     <div className="bg-white rounded-xl border border-slate-200 shadow-2xl flex flex-col h-[85vh] overflow-hidden">
       <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center"><Database size={16} /></div>
+          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+            <Database size={16} />
+          </div>
           <div>
-            <h2 className="text-[11px] font-black uppercase tracking-widest leading-none">Database Explorer</h2>
+            <h2 className="text-[11px] font-black uppercase tracking-widest leading-none text-white">Database Explorer</h2>
             <p className="text-[8px] text-slate-400 uppercase mt-1 font-bold">
               {filteredData.length} rows × {dbFields.length} columns
               {extraFields.length > 0 && (
-                <span className="ml-2 text-amber-400">({extraFields.length} custom fields)</span>
+                <span className="ml-2 text-amber-400">({extraFields.length} custom)</span>
               )}
             </p>
           </div>
@@ -64,6 +69,34 @@ export const DataManagerView = ({
             />
           </div>
           <div className="h-6 w-px bg-slate-700 mx-1" />
+          {/* Column Width Slider Toggle */}
+          <div className="relative">
+            <button 
+              onClick={() => setShowSlider(!showSlider)}
+              className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-md text-[9px] font-black uppercase transition-all border border-slate-600"
+              title="Column Width"
+            >
+              <SlidersHorizontal size={12}/>
+            </button>
+            {showSlider && (
+              <div className="absolute top-full right-0 mt-2 bg-white rounded-lg shadow-xl border border-slate-200 p-3 w-48 z-50">
+                <div className="text-[10px] font-bold text-slate-700 mb-2">Column Width</div>
+                <input
+                  type="range"
+                  min="80"
+                  max="200"
+                  value={colWidth}
+                  onChange={(e) => setColWidth(parseInt(e.target.value))}
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+                <div className="flex justify-between text-[9px] text-slate-500 mt-1">
+                  <span>80px</span>
+                  <span>{colWidth}px</span>
+                  <span>200px</span>
+                </div>
+              </div>
+            )}
+          </div>
           <button 
             onClick={onAddRow} 
             className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-md text-[9px] font-black uppercase hover:bg-emerald-700 transition-all shadow-md shadow-emerald-500/10 border-b-2 border-emerald-800 active:border-0 active:translate-y-[1px]"
@@ -102,7 +135,8 @@ export const DataManagerView = ({
                 return (
                   <th 
                     key={field} 
-                    className={`relative min-w-[150px] max-w-[250px] ${isCustom ? 'bg-amber-50/50' : ''}`}
+                    className={`relative ${isCustom ? 'bg-amber-50/50' : ''}`}
+                    style={{ minWidth: `${colWidth}px`, maxWidth: `${colWidth + 80}px` }}
                   >
                     <div className={`px-3 py-3 border-r border-slate-100 ${isCustom ? 'border-amber-200' : ''}`}>
                       <FilterDropdown 
@@ -142,10 +176,11 @@ export const DataManagerView = ({
                         className={`px-1 py-0.5 border-r border-slate-100 ${isCustom ? 'bg-amber-50/30 border-amber-100' : ''}`}
                       >
                         <input 
-                          className="w-full px-2 py-1.5 text-[11px] font-medium text-slate-700 bg-transparent border border-transparent hover:border-slate-300 focus:bg-white focus:border-blue-500 focus:shadow-inner rounded outline-none transition-all" 
+                          className="w-full px-2 py-1 text-[10px] font-medium text-slate-700 bg-transparent border border-transparent hover:border-slate-300 focus:bg-white focus:border-blue-500 focus:shadow-inner rounded outline-none transition-all truncate" 
                           value={row[f] || ''} 
                           onChange={(e) => onUpdateRow(dataIdx, f, e.target.value)} 
                           placeholder={isCustom ? '...' : ''}
+                          title={row[f] || ''}
                         />
                       </td>
                     );
