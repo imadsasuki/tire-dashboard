@@ -3,6 +3,8 @@ import { Map as MapIcon, Database } from 'lucide-react';
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from './config/firebase';
 import { APP_ID, MAP_TYPE_CONFIG } from './config/constants';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const MapModule = ({ data }) => {
     const [isSyncing, setIsSyncing] = useState(false);
@@ -33,7 +35,7 @@ const MapModule = ({ data }) => {
         const center = size / 2;
         if (activeTypes.length <= 1) {
             const color = typeConfig[activeTypes[0] || 9].color;
-            return window.L.divIcon({
+            return L.divIcon({
                 html: `<div style="width:${radius*2}px; height:${radius*2}px; background:${color}; border:2px solid white; border-radius:50%; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"></div>`,
                 className: 'custom-marker', iconSize: [radius*2, radius*2], iconAnchor: [radius, radius]
             });
@@ -49,14 +51,14 @@ const MapModule = ({ data }) => {
             const y2 = center + radius * Math.sin(Math.PI * endAngle / 180);
             paths += `<path d="M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z" fill="${typeConfig[type].color}" stroke="white" stroke-width="0.8"/>`;
         });
-        return window.L.divIcon({
+        return L.divIcon({
             html: `<svg width="${size}" height="${size}">${paths}</svg>`,
             className: 'custom-marker', iconSize: [size, size], iconAnchor: [center, center]
         });
     };
 
     const renderMarkers = useCallback(() => {
-        if (!markersGroupRef.current || !window.L) return;
+        if (!markersGroupRef.current) return;
         markersGroupRef.current.clearLayers();
         let visibleCount = 0;
 
@@ -66,7 +68,7 @@ const MapModule = ({ data }) => {
 
             visibleCount++;
             const icon = createPieIcon(activeInNode, item.radius);
-            window.L.marker(item.coords, { icon }).bindPopup(`
+            L.marker(item.coords, { icon }).bindPopup(`
                 <div style="min-width: 220px; font-family: 'Inter', sans-serif; padding: 4px;">
                     <div style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">${item.row.Country}</div>
                     <div style="font-size: 14px; font-weight: 900; color: #0f172a; margin-bottom: 4px; line-height: 1.2;">${item.row.Company}</div>
@@ -91,9 +93,9 @@ const MapModule = ({ data }) => {
             if (snap.exists()) registryRef.current = snap.data();
 
             if (!mapRef.current) {
-                mapRef.current = window.L.map('leaflet-container', { zoomControl: false, attributionControl: false }).setView([20, 0], 2);
-                window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(mapRef.current);
-                markersGroupRef.current = window.L.layerGroup().addTo(mapRef.current);
+                mapRef.current = L.map('leaflet-container', { zoomControl: false, attributionControl: false }).setView([20, 0], 2);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(mapRef.current);
+                markersGroupRef.current = L.layerGroup().addTo(mapRef.current);
             }
 
             processCsvData(db, docRef);
