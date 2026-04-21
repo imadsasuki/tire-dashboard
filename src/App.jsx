@@ -13,21 +13,18 @@ const App = () => {
   const user = useAuth();
   const { data, isLoading, isSyncing, syncToCloud, addRow, deleteRow, updateRow, dbFields, setData } = useTireData(user);
 
-  // Generate unique row ID from composite key
-  const getRowId = (row) => `${row.Company}|${row.Country}|${row['Plant Location']}`;
-
-  // Export all data as CSV
+  // Export all data as CSV with row index for reliable matching
   const handleExport = () => {
     if (!data.length) return;
-    const headers = dbFields;
-    const csvRows = data.map(row => 
-      headers.map(h => {
+    const headers = ['_rowIndex', ...dbFields];
+    const csvRows = data.map((row, idx) => {
+      const rowData = [idx, ...dbFields.map(h => {
         const val = row[h] ?? '';
-        // Escape quotes and wrap in quotes if contains comma
         const escaped = String(val).replace(/"/g, '""');
         return escaped.includes(',') ? `"${escaped}"` : escaped;
-      }).join(',')
-    );
+      })];
+      return rowData.join(',');
+    });
     const csv = [headers.join(','), ...csvRows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -77,10 +74,8 @@ const App = () => {
       
       // Parse headers
       const headers = parseCSVLine(lines[0]);
-      
-      // Build current data lookup map
-      const existingMap = new Map();
-      data.forEach(row => existingMap.set(getRowId(row), row));
+      const hasRowIndex = headers.includes('_rowIndex');
+      const dataFields = headers.filter(h => h !== '_rowIndex' && h !== 'capacityValue' && h !== 'typeTags' && h !== 'ParentCompany');
       
       let added = 0;
       let updated = 0;
@@ -107,16 +102,22 @@ const App = () => {
         const parentMatch = rowObj.Company?.match(/\(([^)]+)\)/);
         rowObj.ParentCompany = parentMatch ? parentMatch[1] : (rowObj.Company?.split(' ')[0] || 'Unknown');
         
-        // Check if row exists
-        const rowId = getRowId(rowObj);
-        const existingIndex = newData.findIndex(r => getRowId(r) === rowId);
-        
-        if (existingIndex >= 0) {
-          // Update existing row
-          newData[existingIndex] = { ...newData[existingIndex], ...rowObj };
-          updated++;
+        // Match by row index if available, otherwise treat as new
+        if (hasRowIndex && rowObj._rowIndex !== '') {
+          const rowIdx = parseInt(rowObj._rowIndex);
+          if (!isNaN(rowIdx) && rowIdx >= 0 && rowIdx < newData.length) {
+            // Update existing row at index
+            newData[rowIdx] = { ...newData[rowIdx], ...rowObj };
+            updated++;
+          } else {
+            // Index out of range - add as new
+            delete rowObj._rowIndex;
+            newData.push(rowObj);
+            added++;
+          }
         } else {
-          // Add new row
+          // No row index - add as new
+          delete rowObj._rowIndex;
           newData.push(rowObj);
           added++;
         }
