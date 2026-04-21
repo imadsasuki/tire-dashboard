@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Target, LayoutDashboard, Database, Plus, Save, RefreshCcw, Loader2 } from 'lucide-react';
+import { Target, LayoutDashboard, Database, Plus, Save, RefreshCcw, Loader2, Download, Upload } from 'lucide-react';
 import MapModule from './MapModule';
 import { DashboardView } from './components/dashboard';
 import { DataManagerView } from './components/dataManager';
@@ -11,7 +11,128 @@ const DASH_FIELDS = ['Region', 'Company', 'Country', 'TireTypes'];
 const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const user = useAuth();
-  const { data, isLoading, isSyncing, syncToCloud, addRow, deleteRow, updateRow, dbFields } = useTireData(user);
+  const { data, isLoading, isSyncing, syncToCloud, addRow, deleteRow, updateRow, dbFields, setData } = useTireData(user);
+
+  // Generate unique row ID from composite key
+  const getRowId = (row) => `${row.Company}|${row.Country}|${row['Plant Location']}`;
+
+  // Export all data as CSV
+  const handleExport = () => {
+    if (!data.length) return;
+    const headers = dbFields;
+    const csvRows = data.map(row => 
+      headers.map(h => {
+        const val = row[h] ?? '';
+        // Escape quotes and wrap in quotes if contains comma
+        const escaped = String(val).replace(/"/g, '""');
+        return escaped.includes(',') ? `"${escaped}"` : escaped;
+      }).join(',')
+    );
+    const csv = [headers.join(','), ...csvRows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tire_intel_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Parse CSV line handling quoted values
+  const parseCSVLine = (line) => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+      if (char === '"' && inQuotes && nextChar === '"') {
+        current += '"'; i++;
+      } else if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result.map(v => v.replace(/^"|"$/g, ''));
+  };
+
+  // Import CSV and batch update/add rows
+  const handleImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const csvText = event.target.result;
+      const lines = csvText.split('\n').filter(l => l.trim());
+      if (lines.length < 2) {
+        alert('CSV file is empty or invalid');
+        return;
+      }
+      
+      // Parse headers
+      const headers = parseCSVLine(lines[0]);
+      
+      // Build current data lookup map
+      const existingMap = new Map();
+      data.forEach(row => existingMap.set(getRowId(row), row));
+      
+      let added = 0;
+      let updated = 0;
+      const newData = [...data];
+      
+      // Parse each row
+      for (let i = 1; i < lines.length; i++) {
+        const values = parseCSVLine(lines[i]);
+        const rowObj = {};
+        headers.forEach((h, idx) => {
+          rowObj[h] = values[idx] || '';
+        });
+        
+        // Calculate derived fields
+        const capRaw = rowObj['Estimated Capacity'] || '';
+        let capVal = parseFloat(capRaw.replace(/,/g, '')) || 0;
+        if (capRaw.toLowerCase().includes('u/d')) capVal *= 350;
+        if (capRaw.toLowerCase().includes('mil')) capVal *= 1000000;
+        rowObj.capacityValue = capVal;
+        
+        const typeStr = (rowObj['Tire Types'] || '').toLowerCase();
+        rowObj.typeTags = typeStr.split(/[,\s()]+/).filter(t => /\d/.test(t));
+        
+        const parentMatch = rowObj.Company?.match(/\(([^)]+)\)/);
+        rowObj.ParentCompany = parentMatch ? parentMatch[1] : (rowObj.Company?.split(' ')[0] || 'Unknown');
+        
+        // Check if row exists
+        const rowId = getRowId(rowObj);
+        const existingIndex = newData.findIndex(r => getRowId(r) === rowId);
+        
+        if (existingIndex >= 0) {
+          // Update existing row
+          newData[existingIndex] = { ...newData[existingIndex], ...rowObj };
+          updated++;
+        } else {
+          // Add new row
+          newData.push(rowObj);
+          added++;
+        }
+      }
+      
+      // Update state
+      setData(newData);
+      
+      // Show summary
+      alert(`Import complete:\n• ${added} new rows added\n• ${updated} existing rows updated\n\nClick 'Sync' to save to cloud.`);
+      
+      // Reset file input
+      e.target.value = '';
+    };
+    reader.readAsText(file);
+  };
 
   // Dashboard filter state
   const dashFilters = useFilterState(data, DASH_FIELDS);
@@ -108,6 +229,8 @@ const App = () => {
             onUpdateRow={updateRow}
             onSync={syncToCloud}
             isSyncing={isSyncing}
+            onExport={handleExport}
+            onImport={handleImport}
           />
         )}
       </main>

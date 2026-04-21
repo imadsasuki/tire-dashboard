@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Database, Search, Plus, Save, Trash2, RefreshCcw, Table2, AlertCircle, SlidersHorizontal } from 'lucide-react';
+import { Database, Search, Plus, Save, Trash2, RefreshCcw, Table2, AlertCircle, SlidersHorizontal, Upload, Download } from 'lucide-react';
 import { FilterDropdown } from '../common/FilterDropdown';
 import { DB_FIELDS } from '../../config/constants';
 
@@ -21,7 +21,9 @@ export const DataManagerView = ({
   onDeleteRow,
   onUpdateRow,
   onSync,
-  isSyncing
+  isSyncing,
+  onExport,
+  onImport
 }) => {
   // Column width slider state (80px to 200px)
   const [colWidth, setColWidth] = useState(120);
@@ -110,6 +112,30 @@ export const DataManagerView = ({
           >
             {isSyncing ? <RefreshCcw size={12} className="animate-spin"/> : <Save size={12}/>} Sync
           </button>
+          <div className="h-6 w-px bg-slate-700 mx-1" />
+          {/* Export Button */}
+          <button 
+            onClick={onExport} 
+            className="flex items-center gap-2 px-3 py-2 bg-slate-700 text-white rounded-md text-[9px] font-black uppercase hover:bg-slate-600 transition-all border border-slate-600"
+            title="Export all data as CSV"
+          >
+            <Download size={12}/> Export
+          </button>
+          {/* Import Button */}
+          <div className="relative">
+            <input 
+              type="file" 
+              accept=".csv" 
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+              onChange={onImport}
+            />
+            <button 
+              className="flex items-center gap-2 px-3 py-2 bg-amber-600 text-white rounded-md text-[9px] font-black uppercase hover:bg-amber-700 transition-all border-b-2 border-amber-800 active:border-0 active:translate-y-[1px]"
+              title="Import CSV to batch update/add rows"
+            >
+              <Upload size={12}/> Import
+            </button>
+          </div>
         </div>
       </div>
 
