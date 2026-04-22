@@ -2,7 +2,7 @@ export const APP_ID = 'tire-intel-app';
 
 export const DB_FIELDS = [
   'Region', 'Company', 'ParentCompany', 'Country', 'Plant Location', 
-  'Year Opened', 'Estimated Capacity', 'Tire Types', 'DOT Codes', 
+  'Year Opened', 'Estimated Capacity', 'Standard Capacity', 'Tire Types', 'DOT Codes', 
   'Employees (u=unionized)', 'Annotation', 'lat', 'lng'
 ];
 

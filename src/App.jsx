@@ -6,7 +6,7 @@ import { DataManagerView } from './components/dataManager';
 import { useAuth, useTireData, useFilterState } from './hooks';
 import { DB_FIELDS } from './config';
 
-const DASH_FIELDS = ['Region', 'Company', 'Country', 'TireTypes'];
+const DASH_FIELDS = ['Region', 'Company', 'ParentCompany', 'Country', 'TireTypes'];
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -89,12 +89,17 @@ const App = () => {
           rowObj[h] = values[idx] || '';
         });
         
-        // Calculate derived fields
-        const capRaw = rowObj['Estimated Capacity'] || '';
-        let capVal = parseFloat(capRaw.replace(/,/g, '')) || 0;
-        if (capRaw.toLowerCase().includes('u/d')) capVal *= 350;
-        if (capRaw.toLowerCase().includes('mil')) capVal *= 1000000;
-        rowObj.capacityValue = capVal;
+        // Calculate capacityValue - use Standard Capacity (u/y) if available, else parse Estimated Capacity
+        const standardCap = rowObj['Standard Capacity'];
+        if (standardCap) {
+          rowObj.capacityValue = parseFloat(String(standardCap).replace(/,/g, '')) || 0;
+        } else {
+          const capRaw = rowObj['Estimated Capacity'] || '';
+          let capVal = parseFloat(capRaw.replace(/,/g, '')) || 0;
+          if (capRaw.toLowerCase().includes('u/d')) capVal *= 365;
+          if (capRaw.toLowerCase().includes('mil')) capVal *= 1000000;
+          rowObj.capacityValue = capVal;
+        }
         
         const typeStr = (rowObj['Tire Types'] || '').toLowerCase();
         rowObj.typeTags = typeStr.split(/[,\s()]+/).filter(t => /\d/.test(t));
@@ -199,7 +204,7 @@ const App = () => {
         </div>
       </nav>
 
-      <main className="p-6">
+      <main className="p-6 w-full max-w-none">
         {activeTab === 'dashboard' ? (
           <DashboardView 
             data={data}

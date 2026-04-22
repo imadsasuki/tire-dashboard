@@ -18,15 +18,10 @@ const MapModule = ({ data }) => {
 
     const typeConfig = MAP_TYPE_CONFIG;
 
-    const getRadius = (capacityStr) => {
-        if (!capacityStr || capacityStr === '–') return 7;
-        const cleanStr = capacityStr.toLowerCase().replace(/,/g, '');
-        const numMatch = cleanStr.match(/\d+(\.\d+)?/);
-        if (!numMatch) return 7;
-        let val = parseFloat(numMatch[0]);
-        if (cleanStr.includes('mil')) val *= 1000000;
-        if (cleanStr.includes('u/d')) val *= 365;
-        if (cleanStr.includes('t/y')) val *= 6.6; 
+    // Use pre-calculated capacityValue (Standard Capacity in u/y, or fallback)
+    const getRadius = (capacityValue) => {
+        const val = parseFloat(capacityValue) || 0;
+        if (val === 0) return 7;
         return Math.max(6, Math.min(Math.sqrt(val) * 0.006, 32));
     };
 
@@ -115,7 +110,7 @@ const MapModule = ({ data }) => {
             if (coords) {
                 const raw = String(row['Tire Types'] || "1").replace(/\(.*\)/g, '');
                 const types = raw.split(/[ ,]+/).map(t => parseInt(t.trim())).filter(t => !isNaN(t));
-                tempProcessed.push({ coords, types, row, radius: getRadius(row['Estimated Capacity']) });
+                tempProcessed.push({ coords, types, row, radius: getRadius(row.capacityValue) });
             } else { missing.push(row); }
         }
 
@@ -139,7 +134,7 @@ const MapModule = ({ data }) => {
                         await setDoc(docRef, registryRef.current, { merge: true });
                         const raw = String(row['Tire Types'] || "1").replace(/\(.*\)/g, '');
                         const types = raw.split(/[ ,]+/).map(t => parseInt(t.trim())).filter(t => !isNaN(t));
-                        processedDataRef.current.push({ coords: newCoords, types, row, radius: getRadius(row['Estimated Capacity']) });
+                        processedDataRef.current.push({ coords: newCoords, types, row, radius: getRadius(row.capacityValue) });
                         renderMarkers();
                     }
                 } catch (e) { console.warn("Failed", query); }

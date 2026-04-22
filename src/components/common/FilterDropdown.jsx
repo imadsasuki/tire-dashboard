@@ -33,8 +33,8 @@ export const FilterDropdown = ({ label, field, options, active, onToggle, onClea
       
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-slate-200 shadow-2xl rounded-xl z-20 overflow-hidden ring-1 ring-black/5 animate-in fade-in slide-in-from-top-1 duration-200">
+          <div className="fixed inset-0" style={{ zIndex: 100 }} onClick={() => setOpen(false)} />
+          <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-slate-200 shadow-2xl rounded-xl overflow-hidden ring-1 ring-black/5 animate-in fade-in slide-in-from-top-1 duration-200" style={{ zIndex: 101 }}>
             <div className="p-3 border-b bg-slate-50 flex justify-between items-center font-black text-[9px] uppercase tracking-widest text-slate-500">
               <span className="flex items-center gap-2"><Filter size={10}/> {label}</span>
               <button 

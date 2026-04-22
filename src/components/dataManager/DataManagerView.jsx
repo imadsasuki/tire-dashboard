@@ -43,7 +43,7 @@ export const DataManagerView = ({
   }, [dbFields]);
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-2xl flex flex-col h-[85vh] overflow-hidden">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-2xl flex flex-col">
       <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
@@ -149,10 +149,10 @@ export const DataManagerView = ({
         </div>
       )}
 
-      <div className="overflow-auto flex-1 scrollbar-thin scrollbar-thumb-slate-200">
+      <div className="overflow-x-auto overflow-y-visible scrollbar-thin scrollbar-thumb-slate-200" style={{ maxHeight: '70vh' }}>
         <table 
-          className="w-full text-left border-collapse" 
-          style={{ minWidth: `${tableMinWidth}px` }}
+          className="text-left border-collapse" 
+          style={{ minWidth: `${tableMinWidth}px`, tableLayout: 'fixed' }}
         >
           <thead className="sticky top-0 bg-white z-20 border-b-2 border-slate-100 shadow-sm">
             <tr>
